@@ -11,7 +11,6 @@ Contains:
     Course:   Represents the details around a course taken in university.
 
 """
-from typing import Tuple
 
 
 class Schedule:
@@ -19,7 +18,7 @@ class Schedule:
     Represents a schedule of classes for however many years are left.
 
     Attributes
-        semesters:      Semesters left to schedule.
+        semesters:      List of Semesters left to schedule.
         courses_taken:  List of courses that have already been taken and credited for.
     """
 
@@ -45,6 +44,7 @@ class Schedule:
 
         :raises: IndexError: Index was out of bounds.
         :param index: Year to add course to (0-based indexing)
+        :param course: Course to add to Schedule.
         :return: Result code
         """
         if index >= len(self._semesters):
@@ -52,9 +52,24 @@ class Schedule:
         return self._semesters[index].add_course(course)
 
     def remove_course(self, course: 'Course', index: int):
+        """
+        remove_course
+
+        Attempts to remove a course from the semester at index 'index'
+
+        :param course:
+        :param index:
+        :return:
+        """
         if index >= len(self._semesters):
             raise IndexError("Index given was beyond the bounds of self._semesters")
         return self._semesters[index].remove_course(course)
+
+    # Setters and Getters
+
+    @property
+    def semesters(self):
+        return self._semesters
 
     # Debug
 
@@ -125,7 +140,6 @@ class Semester:
         if self._total_load + course.credit_load > self._max_load + self._overload_cap:
             return 'c'
 
-        self._total_load += course.credit_load
         new_diff = self._total_diff + course.difficulty
 
         # Check difficulty rating before adding
@@ -134,6 +148,7 @@ class Semester:
             return 'd'
 
         # Finally, add course and update attributes
+        self._total_load += course.credit_load
         self._courses[key] = course
         self._total_diff = new_diff
         self._diff_rating = new_diff_rating
@@ -150,11 +165,18 @@ class Semester:
         :return:    True if successfully removed, false if failed
         """
         if key in self._courses:
+            self._total_load -= self._courses[key].credit_load
+            self._total_diff -= self._courses[key].difficulty
             del self._courses[key]
+            # self._diff_rating = self._total_diff / len(self._courses)
             return True
         return False
 
     # Setters and Getters
+
+    @property
+    def courses(self):
+        return self._courses
 
     @property
     def load(self):
@@ -190,7 +212,7 @@ class Course:
     """
 
     def __init__(self, id_no: int, subj: str, cred: int, *, diff: float = 0.5, deadline: bool = None,
-                 pre_reqs: Tuple['Course', ...] = tuple()):
+                 pre_reqs: list('Course')=list()):
         """
         Constructor.
 
@@ -207,7 +229,7 @@ class Course:
         self._credit_load = cred
         self._difficulty = diff
         self._deadline = deadline
-        self._pre_reqs = pre_reqs
+        self._pre_reqs = list(pre_reqs)
 
     def get_course_code(self):
         """
@@ -266,6 +288,10 @@ class Course:
     @deadline.setter
     def deadline(self, dl: int):
         self._deadline = dl
+
+    @property
+    def pre_reqs(self):
+        return self._pre_reqs
 
     # Debug
 
