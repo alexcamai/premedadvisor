@@ -51,7 +51,7 @@ class Schedule:
             raise IndexError("Index given was beyond the bounds of self._semesters")
         return self._semesters[index].add_course(course)
 
-    def remove_course(self, course: 'Course', index: int):
+    def remove_course(self, key: str, index: int):
         """
         remove_course
 
@@ -63,7 +63,7 @@ class Schedule:
         """
         if index >= len(self._semesters):
             raise IndexError("Index given was beyond the bounds of self._semesters")
-        return self._semesters[index].remove_course(course)
+        return self._semesters[index].remove_course(key)
 
     # Setters and Getters
 
@@ -115,20 +115,16 @@ class Semester:
         self._overload_cap = overload_cap
         self._max_diff = max_diff
 
-    def add_course(self, course: 'Course'):
+    def can_place(self, course: 'Course'):
         """
         add_course
 
-        Adds a course to the Semester.
+        Shows if course can be added
 
         :raises: TypeError: Only Course objects can be added.
         :param course:  Course to be added.
 
-        :return: Code describing result:
-                    s: success
-                    e: course exists in the semester already.
-                    c: credit overload not allowed
-                    d: difficulty overload
+        :return: True/false if the course can/cannot be placed in this semester.
         """
         if type(course) != Course:
             raise TypeError("Cannot use argument of type {} in list of type <class 'Course'>.".format(type(course)))
@@ -137,21 +133,30 @@ class Semester:
 
         # Check if the course already exists and can only be taken once
         if key in self._courses and not course.multi:
-            return 'e'
+            return False
 
         if self._total_load + course.credit_load > self._max_load + self._overload_cap:
-            return 'c'
-
-        new_diff = self._total_diff + course.difficulty
+            return False
 
         # Check difficulty rating before adding
-        new_diff_rating = new_diff / (len(self._courses) + 1)
-        if new_diff_rating > self._max_diff:
-            return 'd'
+        # if (self._total_diff + course.difficulty / (len(self._courses) + 1)) > self._max_diff:
+            # return False
 
-        # Finally, add course and update attributes
+        return True
+
+    def add_course(self, course: 'Course'):
+        """
+
+        :param course:
+        :return:
+        """
+
+        new_diff = self._total_diff + course.difficulty
+        new_diff_rating = new_diff / (len(self._courses) + 1)
+
+        # Add course and update attributes
+        self._courses[course.get_course_code()] = course
         self._total_load += course.credit_load
-        self._courses[key] = course
         if self._subj_dist.get(course.subj) is None:
             self._subj_dist[course.subj] = 0
         self._subj_dist[course.subj] += 1
@@ -191,11 +196,11 @@ class Semester:
 
     @property
     def difficulty(self):
-        return self._total_diff
+        return self._diff_rating
 
     @property
     def subj_dist(self):
-        return self.subj_dist
+        return self._subj_dist
 
     # Other Attributes
 
