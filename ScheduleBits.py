@@ -89,6 +89,7 @@ class Semester:
 
     Attributes
         courses:        Dictionary of Courses currently enrolled in.
+        subj_dist:      Total count of courses of each subject.
         total_load:     Total number of credits enrolled in.
         total_diff:     Total of all difficulty ratings.
         diff_rating:    Average difficulty rating of all courses (from 0.0-1.0).
@@ -106,6 +107,7 @@ class Semester:
         :param max_diff (float):    The maximum difficulty rating for the semester
         """
         self._courses = dict()
+        self._subj_dist = dict()
         self._total_load = 0
         self._total_diff = 0
         self._diff_rating = 0.0
@@ -133,8 +135,8 @@ class Semester:
 
         key = course.get_course_code()
 
-        # Check if the course already exists
-        if key in self._courses:
+        # Check if the course already exists and can only be taken once
+        if key in self._courses and not course.multi:
             return 'e'
 
         if self._total_load + course.credit_load > self._max_load + self._overload_cap:
@@ -150,8 +152,13 @@ class Semester:
         # Finally, add course and update attributes
         self._total_load += course.credit_load
         self._courses[key] = course
+        if self._subj_dist.get(course.subj) is None:
+            self._subj_dist[course.subj] = 0
+        self._subj_dist[course.subj] += 1
         self._total_diff = new_diff
         self._diff_rating = new_diff_rating
+
+        # TODO add functionality for distributing courses based on subject
 
         return 's'
 
@@ -186,6 +193,10 @@ class Semester:
     def difficulty(self):
         return self._total_diff
 
+    @property
+    def subj_dist(self):
+        return self.subj_dist
+
     # Other Attributes
 
     def __len__(self):
@@ -209,10 +220,11 @@ class Course:
         diff:           Subjective course difficulty, on a scale of 0 to 1.0.
         deadline:       The semester (starting with 0 for semester 1 year 1) the course must be scheduled at or before
         pre_reqs:       A tuple of prerequisites for the course, of type Course.
+        multi:   If the Course can be taken multiple times for credit.
     """
 
     def __init__(self, id_no: int, subj: str, cred: int, *, diff: float = 0.5, deadline: bool = None,
-                 pre_reqs: list('Course')=list()):
+                 pre_reqs: list('Course')=list(), multi: bool=False):
         """
         Constructor.
 
@@ -221,6 +233,7 @@ class Course:
         :param diff:        Difficulty rating 0-1.0
         :param deadline:    Deadline for course enrollment
         :param pre_reqs:    Prerequisite courses
+        :param multi:       If can be taken multiple times for credit
 
         :type pre_reqs:     tuple(Course)
         """
@@ -230,6 +243,7 @@ class Course:
         self._difficulty = diff
         self._deadline = deadline
         self._pre_reqs = list(pre_reqs)
+        self._multi = multi
 
     def get_course_code(self):
         """
@@ -241,11 +255,19 @@ class Course:
 
     # Relational Operators
 
-    def __eq__(self, other):
+    def __eq__(self, other: 'Course'):
         return self._subj == other.subj and self._id == other.id and self._credit_load == other.credit_load
 
-    def __ne__(self, other):
+    def __ne__(self, other: 'Course'):
         return not self.__eq__(other)
+
+    # These are not "conventional" < and > operators
+
+    def __gt__(self, other: 'Course'):
+        return len(self.pre_reqs) > len(other.pre_reqs)
+
+    def __lt__(self, other: 'Course'):
+        return not self > other
 
     # Setters and Getters
 
@@ -292,6 +314,10 @@ class Course:
     @property
     def pre_reqs(self):
         return self._pre_reqs
+
+    @property
+    def multi(self):
+        return self._multi
 
     # Debug
 
