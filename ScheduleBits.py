@@ -98,7 +98,7 @@ class Semester:
         max_diff:       Maximum difficulty rating (related to diff_rating)
     """
 
-    def __init__(self, *, max_load=18, overload_cap=0, max_diff=0.75):
+    def __init__(self, *, max_load=18, overload_cap=0, max_diff=0.5):
         """
         Constructor - Creates empty Semester with the following properties:
 
@@ -117,7 +117,7 @@ class Semester:
 
     def can_place(self, course: 'Course'):
         """
-        add_course
+        can_place
 
         Shows if course can be added
 
@@ -139,8 +139,8 @@ class Semester:
             return False
 
         # Check difficulty rating before adding
-        # if (self._total_diff + course.difficulty / (len(self._courses) + 1)) > self._max_diff:
-            # return False
+        if (self._total_diff + course.difficulty) / (len(self._courses) + 1) > self._max_diff:
+            return False
 
         return True
 
@@ -180,7 +180,10 @@ class Semester:
             self._total_load -= self._courses[key].credit_load
             self._total_diff -= self._courses[key].difficulty
             del self._courses[key]
-            # self._diff_rating = self._total_diff / len(self._courses)
+            if len(self._courses) > 0:
+                self._diff_rating = self._total_diff / len(self._courses)
+            else:
+                self._diff_rating = 0.0
             return True
         return False
 
@@ -228,8 +231,8 @@ class Course:
         multi:   If the Course can be taken multiple times for credit.
     """
 
-    def __init__(self, id_no: int, subj: str, cred: int, *, diff: float = 0.5, deadline: bool = None,
-                 pre_reqs: list('Course')=list(), multi: bool=False):
+    def __init__(self, id_no: int, subj: str, cred: int, *, diff: float = 0.5, deadline: int = 0,
+                 pre_reqs: list('str')=list(), multi: bool=False):
         """
         Constructor.
 
@@ -247,6 +250,7 @@ class Course:
         self._credit_load = cred
         self._difficulty = diff
         self._deadline = deadline
+        # TODO change pre_reqs from a list of Courses into a list of course_codes
         self._pre_reqs = list(pre_reqs)
         self._multi = multi
 
@@ -256,7 +260,7 @@ class Course:
 
         :return: The course's unique course code in the format [SUBJ] [ID.NO] [CREDITS]
         """
-        return self._subj + " " + str(self._id) + " " + str(self._credit_load)
+        return self._subj + " " + str(self._id)
 
     # Relational Operators
 

@@ -23,13 +23,13 @@ class CourseAdviser:
     """
 
     def __init__(self, courses_taken: list('Course') = list(), courses_to_take: list('Course') = list(),
-                 subj_max: int = 3):
+                 subj_max: int = 3, semesters_remaining: int=8):
         """
         TODO
         :param courses_taken:
         """
         self._course_bucket = deque(sorted(courses_to_take, reverse=True))
-        self._schedule = Schedule(sem_remaining=6)
+        self._schedule = Schedule(sem_remaining=semesters_remaining)
         self._subj_max = subj_max
 
         if len(courses_taken) == 0:
@@ -43,11 +43,10 @@ class CourseAdviser:
             shuffle(self._course_bucket)
             result = self._place_courses()
             if result:
-                print("Success; Courses placed: " + str(len(self._courses_taken)))
-                return True
-        print("Failed; Courses placed: " + str(len(self._courses_taken)) + ' / '
-              + str(len(self._courses_taken) + len(self._course_bucket)))
-        return False
+                print("Success")
+                print(str(self._schedule))
+                return self._schedule, True
+        return self._schedule, False
 
     def _place_courses(self):
         if len(self._course_bucket) == 0:
@@ -67,13 +66,16 @@ class CourseAdviser:
         for pre_req in course.pre_reqs:
             if pre_req.get_course_code() not in self._courses_taken:
                 return False
-            elif pre_req.get_course_code() in self._schedule.semesters[index].courses:
+            # FIXME sometimes the prereqs end up ahead of the course itself
+            elif pre_req.get_course_code() in self._schedule.semesters[index:]:
                 return False
             if self._schedule.semesters[index].subj_dist.get(course.subj) is not None and \
                     self._schedule.semesters[index].subj_dist[course.subj] == self._subj_max:
                 return False
-            # FIXME some hardcoded trash here. Also, causes infinite loop
-            if pre_req.subj == course.subj and pre_req.id > course.id - 100:
+            # if course.deadline > index + 1: TODO
+                # return False
+            # FIXME some hardcoded trash here.
+            if pre_req.subj == course.subj and pre_req.id >= course.id - 100:
                 return index > 0 and pre_req.get_course_code() in self._schedule.semesters[index - 1].courses and \
                        self._schedule.semesters[index].can_place(course)
         # FIXME subj limitations
