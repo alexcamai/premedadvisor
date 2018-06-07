@@ -9,7 +9,6 @@ def create_db(course_list: list('Course'), db: str = './courses.db'):
     c = conn.cursor()
 
     # Create the table
-    # FIXME overwrite the table if it exists
     c.execute("DROP TABLE IF EXISTS courses;")
     c.execute("CREATE TABLE courses(id text, subj text, num int, credit_load int, diff float, dl int);")
 
@@ -41,7 +40,11 @@ def find(courses: list(), db: str = './courses.db'):
     for course_code in courses:
         for row in c.execute("SELECT * FROM courses WHERE id=?", (str(course_code),)):
             if row is not None:
-                results.append(Course(row['num'], row['subj'], row['credit_load'],
-                                      diff=row['diff'], deadline=row['dl']))
+                print(str(Course(row[2], row[1], row[3],
+                                      diff=row[4], deadline=row[5])))
+                results.append(Course(row[2], row[1], row[3],
+                                      diff=row[4], deadline=row[5]))
 
     conn.close()
+
+    return results

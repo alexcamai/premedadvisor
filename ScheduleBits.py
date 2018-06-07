@@ -232,7 +232,7 @@ class Course:
     """
 
     def __init__(self, id_no: int, subj: str, cred: int, *, diff: float = 0.5, deadline: int = 0,
-                 pre_reqs: list('str')=list(), multi: bool=False):
+                 pre_reqs: list('Course')=list(), multi: bool=False):
         """
         Constructor.
 
@@ -323,6 +323,10 @@ class Course:
     @property
     def pre_reqs(self):
         return self._pre_reqs
+
+    @pre_reqs.setter
+    def pre_reqs(self, pre: list('Course')):
+        self._pre_reqs = pre
 
     @property
     def multi(self):

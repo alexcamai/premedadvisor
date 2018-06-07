@@ -44,7 +44,6 @@ class CourseAdviser:
             result = self._place_courses()
             if result:
                 print("Success")
-                print(str(self._schedule))
                 return self._schedule, True
         return self._schedule, False
 
@@ -66,9 +65,9 @@ class CourseAdviser:
         for pre_req in course.pre_reqs:
             if pre_req.get_course_code() not in self._courses_taken:
                 return False
-            # FIXME sometimes the prereqs end up ahead of the course itself
-            elif pre_req.get_course_code() in self._schedule.semesters[index:]:
-                return False
+            for ind in range(index, len(self._schedule.semesters)):
+                if pre_req.get_course_code() in self._schedule.semesters[ind].courses:
+                    return False
             if self._schedule.semesters[index].subj_dist.get(course.subj) is not None and \
                     self._schedule.semesters[index].subj_dist[course.subj] == self._subj_max:
                 return False
