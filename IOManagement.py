@@ -4,6 +4,13 @@ v 1.0.0
 FIOManager.py
 
 Handles user input in the form of data files.
+
+Contains:
+    import_courses: Fully imports courses and stores their information in a database.
+    write_to_file: Writes the contents of a Schedule to a .xlsx file.
+    _load_from_xl: Loads 'proto' course-list (pre_reqs are stored as strings, not Courses) from a .xlsx file.
+    _package: Attaches Course prerequisites to each course in a list by searching for them in a database.
+
 """
 
 from openpyxl import Workbook
@@ -18,10 +25,9 @@ _SUBJ = 'A'
 _ID = 'B'
 _CREDITS = 'C'
 _DIFF = 'D'
-# TODO
 _PRE = 'E'
-# _MULTI = 'F'
-# _DL = 'G'
+_MULTI = 'F'
+_DL = 'G'
 _TAKEN = 'H'
 
 
@@ -29,71 +35,6 @@ def import_courses(src: str = "courses.xlsx", db: str = "courses.db"):
     courses, taken = _load_from_xl(src)
     sql.create_db(courses + taken, db)
     return _package(courses, db), _package(taken, db)
-
-
-def _load_from_xl(filename: str):
-    current_workbook = load_workbook(filename=filename)
-    sheet_ranges = current_workbook.active
-
-    proto_course_list = list()
-    proto_taken_list = list()
-
-    r = 2
-    # TODO c_diff, c_dl, c_pre_reqs, c_multi
-
-    while sheet_ranges[_ID + str(r)].value is not None:
-        if type(sheet_ranges[_ID + str(r)].value) is not int:
-            raise TypeError("Error in cell [{}{}]: type {} was not int".format(_ID, str(r),
-                                                                               type(sheet_ranges
-                                                                                    [_ID + str(r)].value)))
-        c_id = sheet_ranges[_ID + str(r)].value
-
-        if type(sheet_ranges[_SUBJ + str(r)].value) is not str:
-            raise TypeError("Error in cell [{}{}]: type {} was not str".format(_SUBJ, str(r),
-                                                                               type(sheet_ranges
-                                                                                    [_SUBJ + str(r)].value)))
-        c_subj = sheet_ranges[_SUBJ + str(r)].value
-
-        if type(sheet_ranges[_CREDITS + str(r)].value) is not int:
-            raise TypeError("Error in cell [{}{}]: type {} was not int".format(_ID, str(r),
-                                                                               type(sheet_ranges
-                                                                                    [_CREDITS + str(r)].value)))
-        if sheet_ranges[_DIFF + str(r)].value is not None and \
-                type(sheet_ranges[_DIFF + str(r)].value) is not float:
-            raise TypeError("Error in cell [{}{}]: type {} was not float".format(_DIFF, str(r),
-                                                                                 type(sheet_ranges
-                                                                                      [_DIFF + str(r)].value)))
-        pre = list()
-
-        if sheet_ranges[_PRE + str(r)].value is not None:
-            pre = sheet_ranges[_PRE + str(r)].value.split(',')
-            map(str.strip, pre)
-
-        c_cred = sheet_ranges[_CREDITS + str(r)].value
-
-        c_diff = sheet_ranges[_DIFF + str(r)].value if sheet_ranges[_DIFF + str(r)].value is not None else 0.5
-
-        if sheet_ranges[_TAKEN + str(r)].value == 'Y':
-            proto_taken_list.append(Course(c_id, c_subj, c_cred, diff=c_diff, pre_reqs=pre))
-        else:
-            proto_course_list.append(Course(c_id, c_subj, c_cred, diff=c_diff, pre_reqs=pre))
-
-        r += 1
-
-    return proto_course_list, proto_taken_list
-
-
-def _package(proto_course_list: list(), db: str):
-    results = list()
-
-    # FIXME
-    for course in proto_course_list:
-        print("For course " + str(course) + "   : ")
-        pre = sql.find(course.pre_reqs, db)
-        course.pre_reqs = pre
-        results.append(course)
-
-    return results
 
 
 def write_to_file(schedule: 'Schedule', *, dest="plan.xlsx"):
@@ -125,3 +66,87 @@ def write_to_file(schedule: 'Schedule', *, dest="plan.xlsx"):
                   value=schedule.semesters[index].difficulty)
 
     out.save(dest)
+
+
+def _load_from_xl(filename: str):
+    current_workbook = load_workbook(filename=filename)
+    sheet_ranges = current_workbook.active
+
+    proto_course_list = list()
+    proto_taken_list = list()
+
+    r = 2
+    # FIXME this method is absolutely disgusting
+
+    while sheet_ranges[_ID + str(r)].value is not None:
+
+        # Required information
+
+        if type(sheet_ranges[_ID + str(r)].value) is not int:
+            raise TypeError("Error in cell [{}{}]: type {} was not int".format(_ID, r,
+                                                                               type(sheet_ranges
+                                                                                    [_ID + str(r)].value)))
+        c_id = sheet_ranges[_ID + str(r)].value
+
+        if type(sheet_ranges[_SUBJ + str(r)].value) is not str:
+            raise TypeError("Error in cell [{}{}]: type {} was not str".format(_SUBJ, r,
+                                                                               type(sheet_ranges
+                                                                                    [_SUBJ + str(r)].value)))
+        c_subj = sheet_ranges[_SUBJ + str(r)].value.strip()
+
+        if type(sheet_ranges[_CREDITS + str(r)].value) is not int:
+            raise TypeError("Error in cell [{}{}]: type {} was not int".format(_ID, r,
+                                                                               type(sheet_ranges
+                                                                                    [_CREDITS + str(r)].value)))
+        c_cred = sheet_ranges[_CREDITS + str(r)].value
+
+        # Options
+
+        if sheet_ranges[_DIFF + str(r)].value is not None and type(sheet_ranges[_DIFF + str(r)].value) is not float:
+            raise TypeError("Error in cell [{}{}]: type {} was not float".format(_DIFF, r,
+                                                                                 type(sheet_ranges
+                                                                                      [_DIFF + str(r)].value)))
+
+        c_diff = sheet_ranges[_DIFF + str(r)].value if sheet_ranges[_DIFF + str(r)].value is not None else 0.5
+
+        pre = list()
+
+        if sheet_ranges[_PRE + str(r)].value is not None:
+            pre = sheet_ranges[_PRE + str(r)].value.split(',')
+
+        if sheet_ranges[_MULTI + str(r)].value is not None and type(sheet_ranges[_MULTI + str(r)].value) is not str:
+            TypeError("Error in cell [{}{}]: type {} was not str".format(_MULTI, r,
+                                                                         type(sheet_ranges
+                                                                              [_MULTI + str(r)].value)))
+
+        c_multi = True if sheet_ranges[_MULTI + str(r)].value is not None and \
+            sheet_ranges[_MULTI + str(r)].value.lower == 'y' else False
+
+        if sheet_ranges[_DL + str(r)].value is not None and type(sheet_ranges[_DL + str(r)].value) is not int:
+            raise TypeError("Error in cell [{}{}]: type {} was not int".format(_DL, r,
+                                                                               type(sheet_ranges
+                                                                                    [_DL + str(r)].value)))
+
+        c_dl = None if sheet_ranges[_DL + str(r)].value is None else sheet_ranges[_DL + str(r)].value
+
+        if sheet_ranges[_TAKEN + str(r)].value == 'Y':
+            proto_taken_list.append(Course(c_id, c_subj, c_cred, diff=c_diff, pre_reqs=pre, multi=c_multi,
+                                           deadline=c_dl))
+        else:
+            proto_course_list.append(Course(c_id, c_subj, c_cred, diff=c_diff, pre_reqs=pre, multi=c_multi,
+                                            deadline=c_dl))
+
+        r += 1
+
+    return proto_course_list, proto_taken_list
+
+
+def _package(proto_course_list: list(), db: str):
+    results = list()
+
+    for course in proto_course_list:
+        pre = sql.find(course.pre_reqs, db)
+        course.pre_reqs = pre
+        results.append(course)
+
+    return results

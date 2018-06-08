@@ -18,17 +18,17 @@ class Schedule:
     Represents a schedule of classes for however many years are left.
 
     Attributes
-        semesters:      List of Semesters left to schedule.
-        courses_taken:  List of courses that have already been taken and credited for.
+        semesters:      List of Semesters left to schedule
+        courses_taken:  List of courses that have already been taken and credited for
     """
 
     def __init__(self, *, sem_remaining: int = 8, max_credits: int = 18, overload: int = 0, diff: int = 0.75):
         """
         Constructor.
 
-        :param sem_remaining: Semesters remaining in the Schedule to be planned.
-        :param max_credits:   Maximum credits that should be taken.
-        :param overload:      Amount of credits that can be overloaded.
+        :param sem_remaining: Semesters remaining in the Schedule to be planned
+        :param max_credits:   Maximum credits that should be taken
+        :param overload:      Amount of credits that can be overloaded
         :param diff:          Maximum difficulty rating (between 0.0-1.0)
         """
         self._semesters = list()
@@ -43,8 +43,8 @@ class Schedule:
         Attempts to add a course to the semester at index 'index'
 
         :raises: IndexError: Index was out of bounds.
-        :param index: Year to add course to (0-based indexing)
         :param course: Course to add to Schedule.
+        :param index: Year to add course to (0-based indexing)
         :return: Result code
         """
         if index >= len(self._semesters):
@@ -57,9 +57,10 @@ class Schedule:
 
         Attempts to remove a course from the semester at index 'index'
 
-        :param course:
-        :param index:
-        :return:
+        :param key:         course_code of the Course to be deleted
+        :param index:       Semester to search for the key Course in
+        :raises IndexError: Index was out of bounds
+        :return:            True or False based on success/failure
         """
         if index >= len(self._semesters):
             raise IndexError("Index given was beyond the bounds of self._semesters")
@@ -88,13 +89,13 @@ class Semester:
     Represents a semester of classes taken.
 
     Attributes
-        courses:        Dictionary of Courses currently enrolled in.
-        subj_dist:      Total count of courses of each subject.
-        total_load:     Total number of credits enrolled in.
-        total_diff:     Total of all difficulty ratings.
-        diff_rating:    Average difficulty rating of all courses (from 0.0-1.0).
-        max_load:       Maximum number of credits that can be taken this semester.
-        overload_cap:   How many credits can be overloaded this semester.
+        courses:        Dictionary of Courses currently enrolled in
+        subj_dist:      Total count of courses of each subject
+        total_load:     Total number of credits enrolled in
+        total_diff:     Total of all difficulty ratings
+        diff_rating:    Average difficulty rating of all courses (from 0.0-1.0)
+        max_load:       Maximum number of credits that can be taken this semester
+        overload_cap:   How many credits can be overloaded this semester
         max_diff:       Maximum difficulty rating (related to diff_rating)
     """
 
@@ -103,7 +104,7 @@ class Semester:
         Constructor - Creates empty Semester with the following properties:
 
         :param max_load (int):      Maximum amount of credits to take
-        :param overload_cap (int):  How many credits can be overloaded, if any. 0 as default.
+        :param overload_cap (int):  How many credits can be overloaded, if any. 0 as default
         :param max_diff (float):    The maximum difficulty rating for the semester
         """
         self._courses = dict()
@@ -122,9 +123,9 @@ class Semester:
         Shows if course can be added
 
         :raises: TypeError: Only Course objects can be added.
-        :param course:  Course to be added.
+        :param course:  Course to be added
 
-        :return: True/false if the course can/cannot be placed in this semester.
+        :return: True/false if the course can/cannot be placed in this semester
         """
         if type(course) != Course:
             raise TypeError("Cannot use argument of type {} in list of type <class 'Course'>.".format(type(course)))
@@ -135,6 +136,7 @@ class Semester:
         if key in self._courses and not course.multi:
             return False
 
+        # Check credit load before adding
         if self._total_load + course.credit_load > self._max_load + self._overload_cap:
             return False
 
@@ -146,26 +148,26 @@ class Semester:
 
     def add_course(self, course: 'Course'):
         """
+        Adds a Course to the Semester.
 
-        :param course:
-        :return:
+        pre: can_place(course) returned True.
+
+        :param course: Course to be added.
         """
 
         new_diff = self._total_diff + course.difficulty
         new_diff_rating = new_diff / (len(self._courses) + 1)
 
-        # Add course and update attributes
+        # Add course
         self._courses[course.get_course_code()] = course
+
+        # Update attributes
         self._total_load += course.credit_load
         if self._subj_dist.get(course.subj) is None:
             self._subj_dist[course.subj] = 0
         self._subj_dist[course.subj] += 1
         self._total_diff = new_diff
         self._diff_rating = new_diff_rating
-
-        # TODO add functionality for distributing courses based on subject
-
-        return 's'
 
     def remove_course(self, key: str):
         """
@@ -222,13 +224,13 @@ class Course:
     Represents a course taken at university.
 
     Attributes
-        id:             Course ID number.
+        id:             Course ID number
         subj:           Course subject
         credit_load:    Course's credit load
-        diff:           Subjective course difficulty, on a scale of 0 to 1.0.
+        diff:           Subjective course difficulty, on a scale of 0 to 1.0
         deadline:       The semester (starting with 0 for semester 1 year 1) the course must be scheduled at or before
-        pre_reqs:       A tuple of prerequisites for the course, of type Course.
-        multi:   If the Course can be taken multiple times for credit.
+        pre_reqs:       A tuple of prerequisites for the course, of type Course
+        multi:   If the Course can be taken multiple times for credit
     """
 
     def __init__(self, id_no: int, subj: str, cred: int, *, diff: float = 0.5, deadline: int = 0,
@@ -250,7 +252,6 @@ class Course:
         self._credit_load = cred
         self._difficulty = diff
         self._deadline = deadline
-        # TODO change pre_reqs from a list of Courses into a list of course_codes
         self._pre_reqs = list(pre_reqs)
         self._multi = multi
 
