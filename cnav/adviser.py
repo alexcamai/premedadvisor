@@ -1,7 +1,7 @@
 """
 Author: Alex Camai
 v 1.0.0
-Adviser.py
+adviser.py
 
 The adviser program.
 
@@ -10,7 +10,7 @@ Contains:
 
 """
 
-from ScheduleBits import Schedule, Course
+from .planner import Schedule, Course
 from collections import deque
 from random import shuffle
 

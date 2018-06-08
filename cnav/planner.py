@@ -1,7 +1,7 @@
 """
 Author: Alex Camai
 v 1.0.0
-ScheduleBits.py
+planner.py
 
 The moving pieces the adviser will reference.
 

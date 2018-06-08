@@ -1,15 +1,17 @@
 """
 Author: Alex Camai
 v 1.0.0
-FIOManager.py
+util.py
 
-Handles user input in the form of data files.
+Handles user input in the form of data files and interaction with SQL databases.
 
 Contains:
     import_courses: Fully imports courses and stores their information in a database.
     write_to_file: Writes the contents of a Schedule to a .xlsx file.
+    create_db: Used to create a .db file based on a list of Courses.
+    find:      Used to find a course based on its course code.
     _load_from_xl: Loads 'proto' course-list (pre_reqs are stored as strings, not Courses) from a .xlsx file.
-    _package: Attaches Course prerequisites to each course in a list by searching for them in a database.
+    _pack: Attaches Course prerequisites to each course in a list by searching for them in a database.
 
 """
 
@@ -17,9 +19,9 @@ from openpyxl import Workbook
 from openpyxl import load_workbook
 from openpyxl.compat import range
 
-import sql
+import _sqlite3
 
-from ScheduleBits import Course, Schedule
+from .planner import Course, Schedule
 
 _SUBJ = 'A'
 _ID = 'B'
@@ -31,10 +33,20 @@ _DL = 'G'
 _TAKEN = 'H'
 
 
+# Excel File Management
+
+
 def import_courses(src: str = "courses.xlsx", db: str = "courses.db"):
+    """
+    TODO
+
+    :param src:
+    :param db:
+    :return:
+    """
     courses, taken = _load_from_xl(src)
-    sql.create_db(courses + taken, db)
-    return _package(courses, db), _package(taken, db)
+    create_db(courses + taken, db)
+    return _pack(courses, db), _pack(taken, db)
 
 
 def write_to_file(schedule: 'Schedule', *, dest="plan.xlsx"):
@@ -141,12 +153,84 @@ def _load_from_xl(filename: str):
     return proto_course_list, proto_taken_list
 
 
-def _package(proto_course_list: list(), db: str):
+def _pack(proto_course_list: list(), db: str):
     results = list()
 
     for course in proto_course_list:
-        pre = sql.find(course.pre_reqs, db)
+        pre = find(course.pre_reqs, db)
         course.pre_reqs = pre
         results.append(course)
+
+    return results
+
+
+# SQL Management
+
+
+def create_db(course_list: list('Course'), db: str = './courses.db'):
+    """
+    create_db
+
+    Creates a database of Courses based on the list course_list.
+
+    :param course_list: List of courses to make
+    :param db:          Relative path to the database file
+    """
+    conn = _sqlite3.connect(db)
+
+    c = conn.cursor()
+
+    # Create the table
+    c.execute("DROP TABLE IF EXISTS courses;")
+    c.execute("CREATE TABLE courses(id text, subj text, num int, credit_load int, diff float, dl int, multi boolean);")
+
+    # Insert each course using SQL queries
+    for course in course_list:
+        code = course.get_course_code()
+        subj = course.subj
+        num = course.id
+        credit_load = course.credit_load
+        diff = course.difficulty
+        dl = course.deadline
+        multi = course.multi
+
+        c.execute('SELECT id FROM courses WHERE id=?;', (code,))
+        if c.fetchone() is None:
+            c.execute('''INSERT into courses VALUES (?, ?, ?, ?, ?, ?, ?);''',
+                      (code, subj, num, credit_load, diff, dl, multi))
+
+    # Save
+    conn.commit()
+    conn.close()
+
+
+def find(courses: list(), db: str = './courses.db'):
+    """
+    find
+
+    Returns a list of courses connected to the course codes in list courses.
+
+    :param courses:       List of course KEYS to search for in the database
+    :param db:            Relative path to database file
+    :raises LookupError:  The course code was not found in the database
+    :return:              List of Courses found
+    """
+    results = list()
+
+    conn = _sqlite3.connect(db)
+
+    c = conn.cursor()
+
+    # Search for each course in the database, add to results list
+    for course_code in courses:
+        c.execute("SELECT * FROM courses WHERE id=?", (str(course_code.strip()),))
+        row = c.fetchone()
+        if row is not None:
+            results.append(Course(row[2], row[1], row[3],
+                                  diff=row[4], deadline=row[5]))
+        else:
+            raise LookupError("Error: Course " + course_code + " has no entries in the database.")
+
+    conn.close()
 
     return results
