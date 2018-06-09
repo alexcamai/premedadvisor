@@ -19,7 +19,7 @@ from openpyxl import Workbook
 from openpyxl import load_workbook
 from openpyxl.compat import range
 
-import _sqlite3
+from _sqlite3 import connect
 
 from .planner import Course, Schedule
 
@@ -176,7 +176,7 @@ def create_db(course_list: list('Course'), db: str = './courses.db'):
     :param course_list: List of courses to make
     :param db:          Relative path to the database file
     """
-    conn = _sqlite3.connect(db)
+    conn = connect(db)
 
     c = conn.cursor()
 
@@ -217,7 +217,7 @@ def find(courses: list(), db: str = './courses.db'):
     """
     results = list()
 
-    conn = _sqlite3.connect(db)
+    conn = connect(db)
 
     c = conn.cursor()
 
