@@ -26,7 +26,7 @@ class CourseAdviser:
         schedule:      Schedule for remaining semesters
     """
 
-    def __init__(self, courses_taken: list('Course') = list(), courses_to_take: list('Course') = list(),
+    def __init__(self, courses_to_take: list('Course') = list(), courses_taken: list('Course') = list(),
                  *, subj_max: int = 3, semesters_remaining: int = 8, max_credits: int = 18, overload: int = 0,
                  diff: int = 0.75):
         """
@@ -63,7 +63,7 @@ class CourseAdviser:
             shuffle(self._course_bucket)
             result = self._place_courses()
             if result:
-                print("Success")
+                print(str(self._schedule))
                 return self._schedule, True
         return self._schedule, False
 
@@ -143,7 +143,20 @@ class CourseAdviser:
         if self._courses_taken.get(course.get_course_code()) is not None:
             del self._courses_taken[course.get_course_code()]
 
+    # Getter (for GUI)
+
+    @property
+    def semesters(self):
+        return self._schedule.semesters
+
+    @property
+    def schedule(self):
+        return self._schedule
+
     # Debug
+
+    def __len__(self):
+        return len(self._schedule)
 
     def __str__(self):
         return ">>> courses_taken: " + str(self._courses_taken.keys()) + \

@@ -36,7 +36,7 @@ _TAKEN = 'H'
 # Excel File Management
 
 
-def import_courses(src: str = "courses.xlsx", db: str = "courses.db"):
+def import_courses(src: str, db: str):
     """
     TODO
 
@@ -44,12 +44,12 @@ def import_courses(src: str = "courses.xlsx", db: str = "courses.db"):
     :param db:
     :return:
     """
-    courses, taken = _load_from_xl(src)
+    courses, taken = load_from_xl(src)
     create_db(courses + taken, db)
-    return _pack(courses, db), _pack(taken, db)
+    return pack(courses, db), pack(taken, db)
 
 
-def write_to_file(schedule: 'Schedule', *, dest="plan.xlsx"):
+def write_to_file(schedule: 'Schedule', *, dest):
     out = Workbook()
     plan = out.active
     plan.title = "Plan"
@@ -80,7 +80,7 @@ def write_to_file(schedule: 'Schedule', *, dest="plan.xlsx"):
     out.save(dest)
 
 
-def _load_from_xl(filename: str):
+def load_from_xl(filename: str):
     current_workbook = load_workbook(filename=filename)
     sheet_ranges = current_workbook.active
 
@@ -153,7 +153,7 @@ def _load_from_xl(filename: str):
     return proto_course_list, proto_taken_list
 
 
-def _pack(proto_course_list: list(), db: str):
+def pack(proto_course_list: list(), db: str):
     results = list()
 
     for course in proto_course_list:
@@ -167,7 +167,7 @@ def _pack(proto_course_list: list(), db: str):
 # SQL Management
 
 
-def create_db(course_list: list('Course'), db: str = './courses.db'):
+def create_db(course_list: list('Course'), db: str):
     """
     create_db
 
@@ -204,7 +204,7 @@ def create_db(course_list: list('Course'), db: str = './courses.db'):
     conn.close()
 
 
-def find(courses: list(), db: str = './courses.db'):
+def find(courses: list(), db: str):
     """
     find
 
